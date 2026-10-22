@@ -32,9 +32,17 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Log in to OpenShift
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
         run: |
-          oc login --token="${{ secrets.OPENSHIFT_TOKEN }}" \
-                   --server="${{ secrets.OPENSHIFT_SERVER }}"
+          for v in OPENSHIFT_SERVER OPENSHIFT_TOKEN; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Repository secret $v is missing or empty"
+              exit 1
+            fi
+          done
+          oc login --token="$OPENSHIFT_TOKEN" --server="$OPENSHIFT_SERVER"
           oc project "$NAMESPACE"
 
       - name: Lint chart
