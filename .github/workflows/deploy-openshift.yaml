@@ -1,0 +1,56 @@
+name: Deploy to OpenShift
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "K8s/helm/**"
+      - ".github/workflows/deploy-openshift.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-openshift
+  cancel-in-progress: false
+
+env:
+  NAMESPACE: robot-shop
+  RELEASE: robot-shop
+  STORAGE_CLASS: ibmc-vpc-block-10iops-tier
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install oc
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: "4"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to OpenShift
+        run: |
+          oc login --token="${{ secrets.OPENSHIFT_TOKEN }}" \
+                   --server="${{ secrets.OPENSHIFT_SERVER }}"
+          oc project "$NAMESPACE"
+
+      - name: Lint chart
+        run: helm lint K8s/helm --set openshift=true
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install "$RELEASE" K8s/helm \
+            --namespace "$NAMESPACE" \
+            --set openshift=true \
+            --set nodeport=true \
+            --set ocCreateRoute=true \
+            --set redis.storageClassName="$STORAGE_CLASS" \
+            --wait --timeout 10m
+
+      - name: Show result
+        run: |
+          oc get pods -n "$NAMESPACE"
+          echo "URL: https://$(oc get route web -n "$NAMESPACE" -o jsonpath='{.spec.host}')/"
