@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "K8s/helm/**"
+      - "web/**"
+      - "OpenShift/web-build.yaml"
       - ".github/workflows/deploy-openshift.yaml"
   workflow_dispatch:
 
@@ -45,6 +47,12 @@ jobs:
           oc login --token="$OPENSHIFT_TOKEN" --server="$OPENSHIFT_SERVER"
           oc project "$NAMESPACE"
 
+      - name: Build web image in OpenShift
+        run: |
+          oc apply -n "$NAMESPACE" -f OpenShift/web-build.yaml
+          oc start-build rs-web -n "$NAMESPACE" --from-dir=web --follow --wait
+          oc tag -n "$NAMESPACE" rs-web:latest "rs-web:${GITHUB_SHA::7}"
+
       - name: Lint chart
         run: helm lint K8s/helm --set openshift=true
 
@@ -56,6 +64,7 @@ jobs:
             --set nodeport=true \
             --set ocCreateRoute=true \
             --set redis.storageClassName="$STORAGE_CLASS" \
+            --set web.image="image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/rs-web:${GITHUB_SHA::7}" \
             --wait --timeout 10m
 
       - name: Show result
