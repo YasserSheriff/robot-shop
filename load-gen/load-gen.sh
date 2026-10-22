@@ -9,8 +9,8 @@ NUM_CLIENTS=1
 # Time to run with NUM_CLIENTS e.g. 1h
 RUN_TIME=0
 
-# HOST where Stan's Robot Shop web UI is running
-HOST="http://localhost:8080"
+# HOST where Stan's Robot Shop web UI is running (OpenShift route)
+HOST="https://web-robot-shop.itzroks-di5uim3k-e9af4724cbeb0cbcaabe4c6c7f17d8f1-0000.us-south.containers.appdomain.cloud"
 
 # Error flag
 ERROR=0
@@ -30,14 +30,15 @@ t - time to run n clients
 h - target host
 "
 
-if [ ! -f ../.env ]
-then
-    echo "Please run this script from the load-gen directory"
-    exit 1
-fi
+cd "$(dirname "$0")" || exit 1
 
-# get the tag info
-eval $(egrep '[A-Z]+=' ../.env)
+# get the tag info (optional, defaults to the public Docker Hub image)
+if [ -f ../.env ]
+then
+    eval $(egrep '[A-Z]+=' ../.env)
+fi
+REPO=${REPO:-robotshop}
+TAG=${TAG:-latest}
 
 echo "Repo $REPO"
 echo "Tag $TAG"
@@ -76,11 +77,11 @@ do
             ;;
         h)
             HOST=$OPTARG
-            if echo "$HOST" | egrep '^http://[a-z0-9]+'
+            if echo "$HOST" | egrep '^https?://[a-z0-9]+'
             then
                 echo "Host $HOST"
             else
-                echo "Host must start http://"
+                echo "Host must start http:// or https://"
                 echo "$USAGE"
                 exit 1
             fi
@@ -96,7 +97,6 @@ docker run \
     $DAEMON \
     --name loadgen \
     --rm \
-    --network=host \
     -e "HOST=$HOST" \
     -e "NUM_CLIENTS=$NUM_CLIENTS" \
     -e "RUN_TIME=$RUN_TIME" \

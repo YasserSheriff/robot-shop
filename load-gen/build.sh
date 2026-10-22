@@ -1,7 +1,14 @@
 #!/bin/sh
 
-# get the tag info
-eval $(egrep '[A-Z]+=' ../.env)
+cd "$(dirname "$0")" || exit 1
+
+# get the tag info (optional, defaults to the public Docker Hub image)
+if [ -f ../.env ]
+then
+    eval $(egrep '[A-Z]+=' ../.env)
+fi
+REPO=${REPO:-robotshop}
+TAG=${TAG:-latest}
 
 echo "Repo $REPO"
 echo "Tag $TAG"

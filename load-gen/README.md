@@ -12,7 +12,7 @@ Will build with image and optionally push it.
 $ ./load-gen.sh
 ```
 
-Runs the load generation script against the application started with `docker-compose up` . There are various command line options to configure the load.
+Runs the load generation script against the Robot Shop deployed on OpenShift (the default `HOST` in the script is the `web` route in the `robot-shop` namespace). Use `-h` to target a different `http://` or `https://` URL, for example `./load-gen.sh -h http://localhost:8080` for an application started with `docker-compose up`. The script no longer needs a `../.env` file; `REPO` and `TAG` default to `robotshop` and `latest`. There are various command line options to configure the load.
 
 Alternatively, you can run the Container from Docker Hub directly on one of the nodes having access to the web service:
 
