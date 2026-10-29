@@ -45,7 +45,7 @@ jobs:
             fi
           done
           oc login --token="$OPENSHIFT_TOKEN" --server="$OPENSHIFT_SERVER"
-          oc project "$NAMESPACE"
+          oc project "$NAMESPACE" 2>/dev/null || oc new-project "$NAMESPACE"
 
       - name: Build web image in OpenShift
         run: |
